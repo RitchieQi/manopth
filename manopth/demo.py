@@ -36,6 +36,24 @@ def display_hand(hand_info, mano_faces=None, ax=None, alpha=0.2, batch_idx=0, sh
         ax.add_collection3d(mesh)
     ax.scatter(joints[:, 0], joints[:, 1], joints[:, 2], color='r')
     cam_equal_aspect_3d(ax, verts.numpy())
+
+    '''
+    add axis display
+    '''
+    origin = np.array([0, 0, 0])
+    x_axis = np.array([1, 0, 0])
+    y_axis = np.array([0, 1, 0])
+    z_axis = np.array([0, 0, 1])
+
+    # Plot the x, y, and z axes
+    ax.plot([origin[0], x_axis[0]], [origin[1], x_axis[1]], [origin[2], x_axis[2]], 'r', label='X')
+    ax.plot([origin[0], y_axis[0]], [origin[1], y_axis[1]], [origin[2], y_axis[2]], 'g', label='Y')
+    ax.plot([origin[0], z_axis[0]], [origin[1], z_axis[1]], [origin[2], z_axis[2]], 'b', label='Z')
+
+    # Set axis labels
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Z')
     if show:
         plt.show()
 

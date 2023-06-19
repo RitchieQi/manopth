@@ -1,3 +1,4 @@
+#add comment for understanding
 import os
 
 import numpy as np
@@ -128,8 +129,10 @@ class ManoLayer(Module):
         # Get axis angle from PCA components and coefficients
         if self.use_pca or self.joint_rot_mode == 'axisang':
             # Remove global rot coeffs
+            # first rot coeffs are global rotation, from rot to rot+ncomps are hand pose
             th_hand_pose_coeffs = th_pose_coeffs[:, self.rot:self.rot +
                                                  self.ncomps]
+            
             if self.use_pca:
                 # PCA components --> axis angles
                 th_full_hand_pose = th_hand_pose_coeffs.mm(self.th_selected_comps)

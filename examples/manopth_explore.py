@@ -42,8 +42,8 @@ if __name__ == '__main__':
     argutils.print_args(args)
 
     layer = ManoLayer(
-        flat_hand_mean=args.flat_hand_mean,
-        side=args.side,
+        flat_hand_mean=False,
+        side='right',
         mano_root=args.mano_root,
         ncomps=args.mano_ncomps,
         use_pca=not args.no_pca,
@@ -53,12 +53,33 @@ if __name__ == '__main__':
         rot = 3
     else:
         rot = 6
-    print(rot)
     if args.no_pca:
         args.mano_ncomps = 45
 
     # Generate random pose coefficients
-    pose_params = args.rand_mag * torch.rand(args.batch_size, args.mano_ncomps + rot)
+    #pose_params = args.rand_mag * torch.rand(args.batch_size, args.mano_ncomps + rot)
+    # Random pose coefficients cause inrealistic hand poses, using a fixed pose from DexYCB instead
+    # pose_params = torch.tensor([[ 0.22901694, -0.8658326,   2.056979,    0.7533836,  -0.27545434, -0.3340937,
+    #                             0.34736416, -0.15854122,  0.4078512,   0.87308675,  0.06270637,  0.97369653,
+    #                             0.0849302,  -1.0316252,  -0.09225126,  0.66329986,  0.8585661,  -1.0765529,
+    #                             0.16443409, -0.5211599, -1.8718586,   0.6009506,   0.9062733,  -0.18175313,
+    #                             0.06957736, -0.76746035, -0.20473613,  0.5317386,  -0.09889563,  0.01427455,
+    #                             0.21685456,  0.18911918,  0.30047104,  0.36480734,  0.1723292,  -0.3447407,
+    #                             -0.44491622, -0.02265068, -0.35290015, -0.395249,   -0.47771075, -0.11828388,
+    #                             -0.08889918,  0.27671254, -0.10235115,  0.08282909, -0.16244628,  0.12293345,
+    #                             -0.15703154,  0.06008038,  0.8856846 ]])
+    pose_params = torch.tensor([[ 0.,  0.,   0.,    0.7533836,  -0.27545434, -0.3340937,
+                                0.34736416, -0.15854122,  0.4078512,   0.87308675,  0.06270637,  0.97369653,
+                                0.0849302,  -1.0316252,  -0.09225126,  0.66329986,  0.8585661,  -1.0765529,
+                                0.16443409, -0.5211599, -1.8718586,   0.6009506,   0.9062733,  -0.18175313,
+                                0.06957736, -0.76746035, -0.20473613,  0.5317386,  -0.09889563,  0.01427455,
+                                0.21685456,  0.18911918,  0.30047104,  0.36480734,  0.1723292,  -0.3447407,
+                                -0.44491622, -0.02265068, -0.35290015, -0.395249,   -0.47771075, -0.11828388,
+                                -0.08889918,  0.27671254, -0.10235115,  0.08282909, -0.16244628,  0.12293345,
+                                0.,  0.,  0. ]])
+    print('pose_params: shape&content')
+    print(pose_params.shape)
+    print(pose_params)
     pose_params.requires_grad = True
     if args.random_shape:
         shape = torch.rand(args.batch_size, 10)
@@ -72,20 +93,26 @@ if __name__ == '__main__':
     # Loop for forward/backward quick profiling
     for idx in tqdm(range(args.iters)):
         # Forward pass
-        verts, Jtr = layer(pose_params, th_betas=shape)
+        verts, Jtr = layer(pose_params, shape)
         
         # Backward pass
         loss = torch.norm(verts)
         loss.backward()
 
     if not args.no_display:
-        verts, Jtr = layer(pose_params, th_betas=shape)
+        verts, Jtr = layer(th_pose_coeffs=pose_params, th_betas=shape, th_trans=pose_params[:,48:51])
         joints = Jtr.cpu().detach()
         verts = verts.cpu().detach()
-        print(joints)
         # Draw obtained vertices and joints
+        jt = joints - joints[0,0,:]
+        vt = verts - joints[0,0,:]
+        rot_mat = torch.tensor([[-1, 0, 0], [0, -1, 0], [0, 0, 1]],dtype=torch.float32)
+        jt = torch.matmul(jt, rot_mat)
+        vt = torch.matmul(vt, rot_mat)
+        print(joints)
+
         display_hand({
-            'verts': verts,
-            'joints': joints
+            'verts': vt,
+            'joints': jt
         },
                      mano_faces=layer.th_faces)
