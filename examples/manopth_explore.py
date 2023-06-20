@@ -4,10 +4,11 @@ from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import torch
 from tqdm import tqdm
-
+from scipy.spatial.transform import Rotation as R
 from manopth import argutils
 from manopth.manolayer import ManoLayer
 from manopth.demo import display_hand
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -77,6 +78,8 @@ if __name__ == '__main__':
                                 -0.44491622, -0.02265068, -0.35290015, -0.395249,   -0.47771075, -0.11828388,
                                 -0.08889918,  0.27671254, -0.10235115,  0.08282909, -0.16244628,  0.12293345,
                                 0.,  0.,  0. ]])
+    globalRot = torch.tensor(R.from_euler('xyz', [0.22901694, -0.8658326,   2.056979]).as_matrix(), dtype=torch.float32)
+    print('globalRot', globalRot)
     print('pose_params: shape&content')
     print(pose_params.shape)
     print(pose_params)
@@ -109,8 +112,10 @@ if __name__ == '__main__':
         rot_mat = torch.tensor([[-1, 0, 0], [0, -1, 0], [0, 0, 1]],dtype=torch.float32)
         jt = torch.matmul(jt, rot_mat)
         vt = torch.matmul(vt, rot_mat)
-        print(joints)
-
+        print(jt)
+        jt_inv = torch.matmul(jt, torch.inverse(rot_mat))
+        jt_check = torch.matmul(jt_inv, globalRot) + joints[0,0,:]
+        print(jt_check-joints)
         display_hand({
             'verts': vt,
             'joints': jt
