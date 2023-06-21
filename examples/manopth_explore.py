@@ -8,7 +8,12 @@ from scipy.spatial.transform import Rotation as R
 from manopth import argutils
 from manopth.manolayer import ManoLayer
 from manopth.demo import display_hand
+torch.set_printoptions(sci_mode=False)
+offset = torch.tensor([[[0.24701, 0, 0.01]]],dtype=torch.float32) * 1000
 
+def rearrange(tensor):
+    reindex = [0,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,1,2,3,4]
+    return tensor[:,reindex,:]
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -107,15 +112,22 @@ if __name__ == '__main__':
         joints = Jtr.cpu().detach()
         verts = verts.cpu().detach()
         # Draw obtained vertices and joints
+        print(joints)
+
         jt = joints - joints[0,0,:]
         vt = verts - joints[0,0,:]
         rot_mat = torch.tensor([[-1, 0, 0], [0, -1, 0], [0, 0, 1]],dtype=torch.float32)
+        rot_mat2 = torch.tensor([[1, 0, 0],[0, 0, 1],[0, -1, 0]],dtype=torch.float32)
         jt = torch.matmul(jt, rot_mat)
+        jt = torch.matmul(jt, rot_mat2)
         vt = torch.matmul(vt, rot_mat)
-        print(jt)
-        jt_inv = torch.matmul(jt, torch.inverse(rot_mat))
-        jt_check = torch.matmul(jt_inv, globalRot) + joints[0,0,:]
-        print(jt_check-joints)
+        vt = torch.matmul(vt, rot_mat2)
+        jt_reorder = rearrange(jt)
+        print(jt_reorder + offset[0,0,:])
+        #print(jt.size())
+        #jt_inv = torch.matmul(jt, torch.inverse(rot_mat))
+        #jt_check = torch.matmul(jt_inv, globalRot) + joints[0,0,:]
+        #print(jt_check-joints)
         display_hand({
             'verts': vt,
             'joints': jt
